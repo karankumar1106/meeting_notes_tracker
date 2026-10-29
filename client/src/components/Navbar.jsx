@@ -35,11 +35,10 @@ function Navbar({ activeTab, setActiveTab }) {
           <button
             key={item.id}
             type="button"
-            className={`px-4 py-2 text-sm font-semibold rounded-lg transition-all duration-200 cursor-pointer ${
-              activeTab === item.id
+            className={`px-4 py-2 text-sm font-semibold rounded-lg transition-all duration-200 cursor-pointer ${activeTab === item.id
                 ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
                 : 'text-slate-400 hover:text-slate-100 hover:bg-slate-800/60'
-            }`}
+              }`}
             onClick={() => setActiveTab(item.id)}
           >
             {item.label}
