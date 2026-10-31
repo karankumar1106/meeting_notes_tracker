@@ -108,3 +108,4 @@ export function simulateAIExtraction(title, notes) {
 
   return { newMeeting, newItems };
 }
+
