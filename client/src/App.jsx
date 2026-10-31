@@ -70,6 +70,15 @@ function App() {
     setItems((prevItems) => prevItems.filter((item) => item.id !== itemId));
   };
 
+  // 4. Handler: Update an item's details (text, owner, dueDate, etc.)
+  const handleUpdateItem = (updatedItem) => {
+    setItems((prevItems) =>
+      prevItems.map((item) =>
+        item.id === updatedItem.id ? updatedItem : item
+      )
+    );
+  };
+
   return (
     <div className="max-w-6xl mx-auto px-4 py-8 min-h-screen">
       {/* Top Navigation */}
@@ -93,6 +102,7 @@ function App() {
           <ActionItems
             items={items}
             onToggleStatus={handleToggleStatus}
+            onUpdateItem={handleUpdateItem}
             onDelete={handleDeleteItem}
           />
         )}
