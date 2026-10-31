@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Navbar from './components/Navbar';
 import Dashboard from './components/Dashboard';
 import CreateMeeting from './components/CreateMeeting';
@@ -8,15 +8,34 @@ import { INITIAL_MEETINGS, INITIAL_ITEMS, simulateAIExtraction } from './data/mo
 /**
  * App Component (Central State Orchestrator)
  * 
- * "Lifting State Up":
- * By keeping `meetings` and `items` here in the parent component,
- * CreateMeeting can add new items, Dashboard can count them,
- * and ActionItems can display, filter, and edit them!
+ * "Lifting State Up" & Persistence:
+ * 1. Holds meetings and items state.
+ * 2. Initializes state from browser localStorage so data survives page refreshes.
+ * 3. Uses useEffect to synchronize state changes back to localStorage automatically.
  */
 function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
-  const [meetings, setMeetings] = useState(INITIAL_MEETINGS);
-  const [items, setItems] = useState(INITIAL_ITEMS);
+
+  // Lazy state initialization: reads localStorage once on startup
+  const [meetings, setMeetings] = useState(() => {
+    const saved = localStorage.getItem('meeting_tracker_meetings');
+    return saved ? JSON.parse(saved) : INITIAL_MEETINGS;
+  });
+
+  const [items, setItems] = useState(() => {
+    const saved = localStorage.getItem('meeting_tracker_items');
+    return saved ? JSON.parse(saved) : INITIAL_ITEMS;
+  });
+
+  // useEffect: Runs whenever 'meetings' state changes to keep localStorage in sync
+  useEffect(() => {
+    localStorage.setItem('meeting_tracker_meetings', JSON.stringify(meetings));
+  }, [meetings]);
+
+  // useEffect: Runs whenever 'items' state changes to keep localStorage in sync
+  useEffect(() => {
+    localStorage.setItem('meeting_tracker_items', JSON.stringify(items));
+  }, [items]);
 
   // 1. Handler: Add new meeting and its extracted items
   const handleCreateMeeting = (title, notes) => {
