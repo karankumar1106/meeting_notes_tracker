@@ -31,3 +31,4 @@ app.listen(PORT, () => {
   console.log(`[server] API listening at http://localhost:${PORT}`);
   console.log(`[server] Health check available at http://localhost:${PORT}/api/health`);
 });
+
