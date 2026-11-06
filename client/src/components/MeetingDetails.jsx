@@ -1,3 +1,5 @@
+import StatusBadge from './StatusBadge';
+
 /**
  * MeetingDetails Component (Bootstrap Icons & Clean Engineering Aesthetic)
  * 
@@ -26,17 +28,6 @@ function MeetingDetails({ meeting, items, onBack, onToggleStatus }) {
 
   // Relational Filtering: Extract only items belonging to this specific meeting
   const linkedItems = items.filter((item) => item.meetingId === meeting.id);
-
-  const getStatusBadge = (status) => {
-    switch (status) {
-      case 'completed':
-        return 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20';
-      case 'in-progress':
-        return 'bg-amber-500/10 text-amber-400 border-amber-500/20';
-      default:
-        return 'bg-zinc-800 text-zinc-300 border-zinc-700/60';
-    }
-  };
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
@@ -161,17 +152,10 @@ function MeetingDetails({ meeting, items, onBack, onToggleStatus }) {
                   </div>
                 </div>
 
-                <button
-                  type="button"
+                <StatusBadge
+                  status={item.status}
                   onClick={() => onToggleStatus && onToggleStatus(item.id)}
-                  title="Click to cycle status"
-                  className={`self-start sm:self-auto inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-[10px] font-medium uppercase tracking-wider border cursor-pointer hover:opacity-80 transition-all ${getStatusBadge(
-                    item.status
-                  )}`}
-                >
-                  <span>{item.status}</span>
-                  <i className="bi bi-arrow-repeat text-[11px] text-zinc-400"></i>
-                </button>
+                />
               </div>
             ))}
           </div>
