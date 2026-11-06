@@ -1,12 +1,11 @@
 import { useState } from 'react';
 
 /**
- * CreateMeeting Component (Human-Crafted Engineering Aesthetic)
+ * CreateMeeting Component (Bootstrap Icons & Engineering Aesthetic)
  * 
- * Styled following modern developer tools:
- * - Neutral zinc inputs with high-contrast text and subtle focus rings
- * - Monospace character count and notes area
- * - High-contrast, clean action buttons (no neon purple sparkles)
+ * Props:
+ * - onCreateMeeting: callback function passed from parent (App.jsx)
+ *   Receives (title, notes) and adds them to state.
  */
 function CreateMeeting({ onCreateMeeting }) {
   const [title, setTitle] = useState('');
@@ -39,21 +38,9 @@ function CreateMeeting({ onCreateMeeting }) {
         </p>
       </div>
 
-      {/* Subtle Information Notice */}
+      {/* Subtle Information Notice with Bootstrap Icon */}
       <div className="p-3 mb-6 rounded-lg bg-zinc-950/70 border border-zinc-800/80 text-xs text-zinc-400 flex items-start gap-2.5">
-        <svg
-          className="w-4 h-4 text-zinc-400 shrink-0 mt-0.5"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <circle cx="12" cy="12" r="10" />
-          <path d="M12 16v-4" />
-          <path d="M12 8h.01" />
-        </svg>
+        <i className="bi bi-info-circle text-zinc-400 text-xs mt-0.5 shrink-0"></i>
         <div className="leading-relaxed">
           <span className="font-medium text-zinc-300">Phase 1 Architecture:</span> Submitting simulates the extraction pipeline and structures action items linked to source sentences. Real LLM extraction will be integrated in Phase 5.
         </div>
@@ -117,9 +104,7 @@ function CreateMeeting({ onCreateMeeting }) {
               </>
             ) : (
               <>
-                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="m5 12 5 5L20 7" />
-                </svg>
+                <i className="bi bi-check2 text-sm"></i>
                 <span>Extract Action Items</span>
               </>
             )}

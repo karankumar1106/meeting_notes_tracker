@@ -1,13 +1,13 @@
 import { useState } from 'react';
 
 /**
- * ActionItems Component (Human-Crafted Engineering Aesthetic)
+ * ActionItems Component (Clean Bootstrap Icons & Engineering Aesthetic)
  * 
- * Styled following modern productivity tools (Linear, Raycast, GitHub):
- * - Clean SVG vector icons for search, edit, and deletion (zero emojis)
- * - Restrained status badges with high legibility
- * - Crisp filter tabs matching the segmented control design
- * - Polished edit modal with neutral zinc surfaces
+ * Props:
+ * - items: list of all action items from App state
+ * - onToggleStatus: callback to cycle status
+ * - onUpdateItem: callback to update an item's fields (text, owner, dueDate, status)
+ * - onDelete: callback to remove an item
  */
 function ActionItems({ items, onToggleStatus, onUpdateItem, onDelete }) {
   const [searchTerm, setSearchTerm] = useState('');
@@ -66,7 +66,7 @@ function ActionItems({ items, onToggleStatus, onUpdateItem, onDelete }) {
 
       {/* Search Bar & Filter Controls */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 p-2 bg-zinc-900/40 border border-zinc-800 rounded-xl">
-        {/* Search Input with Vector Icon */}
+        {/* Search Input with Bootstrap Icon */}
         <div className="relative flex-1">
           <input
             type="text"
@@ -75,18 +75,7 @@ function ActionItems({ items, onToggleStatus, onUpdateItem, onDelete }) {
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full pl-8 pr-3 py-1.5 text-xs bg-zinc-950 border border-zinc-800/80 rounded-lg text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-zinc-500 transition-all font-sans"
           />
-          <svg
-            className="absolute left-2.5 top-2 w-3.5 h-3.5 text-zinc-500"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <circle cx="11" cy="11" r="8" />
-            <path d="m21 21-4.3-4.3" />
-          </svg>
+          <i className="bi bi-search absolute left-2.5 top-1.5 text-zinc-500 text-xs"></i>
         </div>
 
         {/* Status Filter Segmented Control */}
@@ -112,13 +101,7 @@ function ActionItems({ items, onToggleStatus, onUpdateItem, onDelete }) {
       {filteredItems.length === 0 ? (
         <div className="text-center py-12 bg-zinc-900/20 border border-zinc-800/80 rounded-xl p-6">
           <div className="w-10 h-10 rounded-lg bg-zinc-800/60 border border-zinc-700/60 flex items-center justify-center mx-auto mb-3 text-zinc-400">
-            <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-              <polyline points="14 2 14 8 20 8" />
-              <line x1="16" y1="13" x2="8" y2="13" />
-              <line x1="16" y1="17" x2="8" y2="17" />
-              <polyline points="10 9 9 9 8 9" />
-            </svg>
+            <i className="bi bi-file-earmark-text text-base"></i>
           </div>
           <p className="text-zinc-200 font-medium text-xs">No action items found</p>
           <p className="text-zinc-500 text-[11px] mt-1">
@@ -155,39 +138,32 @@ function ActionItems({ items, onToggleStatus, onUpdateItem, onDelete }) {
                     type="button"
                     onClick={() => onToggleStatus(item.id)}
                     title="Click to cycle status"
-                    className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-[10px] font-medium uppercase tracking-wider border cursor-pointer hover:opacity-80 transition-all ${getStatusBadgeStyle(
+                    className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-[10px] font-medium uppercase tracking-wider border cursor-pointer hover:opacity-80 transition-all ${getStatusBadgeStyle(
                       item.status
                     )}`}
                   >
                     <span>{item.status}</span>
-                    <span className="text-zinc-500 text-[11px]">↻</span>
+                    <i className="bi bi-arrow-repeat text-[11px] text-zinc-400"></i>
                   </button>
 
-                  {/* Edit Button with Vector SVG */}
+                  {/* Edit Button with Bootstrap Icon */}
                   <button
                     type="button"
                     onClick={() => setEditingItem({ ...item })}
                     title="Edit item"
-                    className="p-1 text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 rounded-md transition-all cursor-pointer"
+                    className="p-1 px-1.5 text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 rounded-md transition-all cursor-pointer"
                   >
-                    <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
-                      <path d="m15 5 4 4" />
-                    </svg>
+                    <i className="bi bi-pencil text-xs"></i>
                   </button>
 
-                  {/* Delete Button with Vector SVG */}
+                  {/* Delete Button with Bootstrap Icon */}
                   <button
                     type="button"
                     onClick={() => onDelete(item.id)}
                     title="Delete item"
-                    className="p-1 text-zinc-500 hover:text-rose-400 hover:bg-rose-500/10 rounded-md transition-all cursor-pointer"
+                    className="p-1 px-1.5 text-zinc-500 hover:text-rose-400 hover:bg-rose-500/10 rounded-md transition-all cursor-pointer"
                   >
-                    <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M3 6h18" />
-                      <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
-                      <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
-                    </svg>
+                    <i className="bi bi-trash3 text-xs"></i>
                   </button>
                 </div>
               </div>
@@ -206,7 +182,7 @@ function ActionItems({ items, onToggleStatus, onUpdateItem, onDelete }) {
 
               {/* Row 3: Source Sentence Attribution */}
               <div className="p-2.5 rounded-lg bg-zinc-950/70 border border-zinc-800/80 text-[11px] text-zinc-400 flex items-start gap-2">
-                <span className="text-zinc-500 font-bold leading-none mt-0.5">“</span>
+                <i className="bi bi-quote text-zinc-500 text-sm leading-none mt-0.5"></i>
                 <span className="italic leading-relaxed text-zinc-400">
                   Source: {item.sourceSentence}
                 </span>
@@ -216,17 +192,14 @@ function ActionItems({ items, onToggleStatus, onUpdateItem, onDelete }) {
         </div>
       )}
 
-      {/* Edit Item Modal (Clean Neutral Zinc Dialog) */}
+      {/* Edit Item Modal (Clean Bootstrap Icons) */}
       {editingItem && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-xs flex items-center justify-center p-4 z-50">
           <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5 max-w-lg w-full shadow-2xl space-y-4">
             {/* Modal Header */}
             <div className="flex items-center justify-between pb-3 border-b border-zinc-800">
               <h3 className="text-xs font-semibold text-zinc-100 flex items-center gap-2">
-                <svg className="w-3.5 h-3.5 text-zinc-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
-                  <path d="m15 5 4 4" />
-                </svg>
+                <i className="bi bi-pencil-square text-zinc-400"></i>
                 <span>Edit Action Item</span>
               </h3>
               <button
@@ -234,7 +207,7 @@ function ActionItems({ items, onToggleStatus, onUpdateItem, onDelete }) {
                 onClick={() => setEditingItem(null)}
                 className="text-zinc-500 hover:text-zinc-200 text-xs cursor-pointer p-1"
               >
-                ✕
+                <i className="bi bi-x-lg"></i>
               </button>
             </div>
 

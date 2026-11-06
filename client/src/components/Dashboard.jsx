@@ -1,10 +1,10 @@
 /**
- * Dashboard Component (Human-Crafted Engineering Aesthetic)
+ * Dashboard Component (Bootstrap Icons & Engineering Aesthetic)
  * 
- * Styled following modern productivity tools (Linear, Raycast, GitHub):
- * - Neutral zinc metric cards with monospace figures
- * - High-contrast, clean action buttons (light-on-dark)
- * - Refined recent meetings cards with clean typography and subtle borders
+ * Props:
+ * - meetings: array of all meetings
+ * - items: array of all action items
+ * - onNavigate: tab switching callback (e.g. onNavigate('create') or onNavigate('items'))
  */
 function Dashboard({ meetings, items, onNavigate }) {
   const pendingCount = items.filter((i) => i.status === 'pending').length;
@@ -15,22 +15,26 @@ function Dashboard({ meetings, items, onNavigate }) {
     {
       label: 'Total Meetings',
       value: meetings.length,
-      subtext: 'Documented sessions'
+      subtext: 'Documented sessions',
+      icon: 'bi-journal-text'
     },
     {
       label: 'Pending Tasks',
       value: pendingCount,
-      subtext: 'Awaiting action'
+      subtext: 'Awaiting action',
+      icon: 'bi-hourglass-split'
     },
     {
       label: 'In Progress',
       value: inProgressCount,
-      subtext: 'Active commitments'
+      subtext: 'Active commitments',
+      icon: 'bi-arrow-repeat'
     },
     {
       label: 'Completed Tasks',
       value: completedCount,
-      subtext: 'Resolved items'
+      subtext: 'Resolved items',
+      icon: 'bi-check2-circle'
     }
   ];
 
@@ -51,11 +55,8 @@ function Dashboard({ meetings, items, onNavigate }) {
           onClick={() => onNavigate('create')}
           className="self-start sm:self-auto inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-medium text-zinc-950 bg-zinc-100 hover:bg-white rounded-lg transition-all shadow-xs cursor-pointer shrink-0"
         >
-          <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="12" y1="5" x2="12" y2="19" />
-            <line x1="5" y1="12" x2="19" y2="12" />
-          </svg>
-          Process New Notes
+          <i className="bi bi-plus-lg text-xs"></i>
+          <span>Process New Notes</span>
         </button>
       </div>
 
@@ -66,9 +67,12 @@ function Dashboard({ meetings, items, onNavigate }) {
             key={stat.label}
             className="p-4 rounded-xl border border-zinc-800 bg-zinc-900/30 hover:border-zinc-700/60 transition-colors"
           >
-            <p className="text-[11px] font-medium text-zinc-500 uppercase tracking-wider mb-2">
-              {stat.label}
-            </p>
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-[11px] font-medium text-zinc-500 uppercase tracking-wider">
+                {stat.label}
+              </p>
+              <i className={`bi ${stat.icon} text-zinc-500 text-xs`}></i>
+            </div>
             <div className="flex items-baseline gap-2">
               <span className="text-2xl font-bold font-mono tracking-tight text-zinc-100">
                 {stat.value}
@@ -95,10 +99,10 @@ function Dashboard({ meetings, items, onNavigate }) {
           <button
             type="button"
             onClick={() => onNavigate('items')}
-            className="text-xs font-medium text-zinc-400 hover:text-zinc-200 transition-colors cursor-pointer flex items-center gap-1"
+            className="text-xs font-medium text-zinc-400 hover:text-zinc-200 transition-colors cursor-pointer flex items-center gap-1.5"
           >
             <span>View all action items</span>
-            <span>→</span>
+            <i className="bi bi-arrow-right text-xs"></i>
           </button>
         </div>
 
@@ -124,9 +128,7 @@ function Dashboard({ meetings, items, onNavigate }) {
               {/* Clean Decision Pill */}
               {meeting.decisions && meeting.decisions.length > 0 && (
                 <div className="p-2.5 rounded-lg bg-zinc-950/70 border border-zinc-800 text-xs text-zinc-300 flex items-start gap-2">
-                  <svg className="w-3.5 h-3.5 text-zinc-400 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <polyline points="20 6 9 17 4 12" />
-                  </svg>
+                  <i className="bi bi-check2 text-emerald-400 text-xs mt-0.5 shrink-0"></i>
                   <span className="text-zinc-300 text-xs leading-relaxed">
                     {meeting.decisions[0]}
                   </span>
