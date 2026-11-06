@@ -135,3 +135,4 @@ export function deleteItemById(id) {
   items = items.filter((item) => item.id !== id);
   return items.length !== initialLength;
 }
+
