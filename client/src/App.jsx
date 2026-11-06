@@ -3,18 +3,20 @@ import Navbar from './components/Navbar';
 import Dashboard from './components/Dashboard';
 import CreateMeeting from './components/CreateMeeting';
 import ActionItems from './components/ActionItems';
+import MeetingDetails from './components/MeetingDetails';
 import { INITIAL_MEETINGS, INITIAL_ITEMS, simulateAIExtraction } from './data/mockData';
 
 /**
  * App Component (Central State Orchestrator)
  * 
  * "Lifting State Up" & Persistence:
- * 1. Holds meetings and items state.
+ * 1. Holds meetings, items, and selectedMeetingId state.
  * 2. Initializes state from browser localStorage so data survives page refreshes.
  * 3. Uses useEffect to synchronize state changes back to localStorage automatically.
  */
 function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [selectedMeetingId, setSelectedMeetingId] = useState(null);
 
   // Lazy state initialization: reads localStorage once on startup
   const [meetings, setMeetings] = useState(() => {
@@ -37,7 +39,27 @@ function App() {
     localStorage.setItem('meeting_tracker_items', JSON.stringify(items));
   }, [items]);
 
-  // 1. Handler: Add new meeting and its extracted items
+  // 1. Navigation Handler: Switch tabs and clear selected meeting if switching away
+  const handleTabChange = (tab) => {
+    if (tab !== 'meeting-details') {
+      setSelectedMeetingId(null);
+    }
+    setActiveTab(tab);
+  };
+
+  // 2. Handler: Select a specific meeting to view its details
+  const handleSelectMeeting = (meetingId) => {
+    setSelectedMeetingId(meetingId);
+    setActiveTab('meeting-details');
+  };
+
+  // 3. Handler: Return from MeetingDetails back to Dashboard
+  const handleBackToDashboard = () => {
+    setSelectedMeetingId(null);
+    setActiveTab('dashboard');
+  };
+
+  // 4. Handler: Add new meeting and its extracted items
   const handleCreateMeeting = (title, notes) => {
     const { newMeeting, newItems } = simulateAIExtraction(title, notes);
 
@@ -48,7 +70,7 @@ function App() {
     setActiveTab('items');
   };
 
-  // 2. Handler: Toggle item status (pending -> in-progress -> completed -> pending)
+  // 5. Handler: Toggle item status (pending -> in-progress -> completed -> pending)
   const handleToggleStatus = (itemId) => {
     const nextStatusMap = {
       'pending': 'in-progress',
@@ -65,12 +87,12 @@ function App() {
     );
   };
 
-  // 3. Handler: Delete an item
+  // 6. Handler: Delete an item
   const handleDeleteItem = (itemId) => {
     setItems((prevItems) => prevItems.filter((item) => item.id !== itemId));
   };
 
-  // 4. Handler: Update an item's details (text, owner, dueDate, etc.)
+  // 7. Handler: Update an item's details (text, owner, dueDate, etc.)
   const handleUpdateItem = (updatedItem) => {
     setItems((prevItems) =>
       prevItems.map((item) =>
@@ -79,10 +101,13 @@ function App() {
     );
   };
 
+  // Find the selected meeting object
+  const selectedMeeting = meetings.find((m) => m.id === selectedMeetingId);
+
   return (
     <div className="max-w-6xl mx-auto px-4 py-8 min-h-screen">
       {/* Top Navigation */}
-      <Navbar activeTab={activeTab} setActiveTab={setActiveTab} />
+      <Navbar activeTab={activeTab} setActiveTab={handleTabChange} />
 
       {/* Main Screens */}
       <main>
@@ -90,7 +115,8 @@ function App() {
           <Dashboard
             meetings={meetings}
             items={items}
-            onNavigate={setActiveTab}
+            onNavigate={handleTabChange}
+            onSelectMeeting={handleSelectMeeting}
           />
         )}
 
@@ -104,6 +130,15 @@ function App() {
             onToggleStatus={handleToggleStatus}
             onUpdateItem={handleUpdateItem}
             onDelete={handleDeleteItem}
+          />
+        )}
+
+        {activeTab === 'meeting-details' && (
+          <MeetingDetails
+            meeting={selectedMeeting}
+            items={items}
+            onBack={handleBackToDashboard}
+            onToggleStatus={handleToggleStatus}
           />
         )}
       </main>

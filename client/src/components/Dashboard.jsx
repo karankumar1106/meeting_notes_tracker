@@ -5,8 +5,9 @@
  * - meetings: array of all meetings
  * - items: array of all action items
  * - onNavigate: tab switching callback (e.g. onNavigate('create') or onNavigate('items'))
+ * - onSelectMeeting: callback to open a specific meeting's detail view
  */
-function Dashboard({ meetings, items, onNavigate }) {
+function Dashboard({ meetings, items, onNavigate, onSelectMeeting }) {
   const pendingCount = items.filter((i) => i.status === 'pending').length;
   const inProgressCount = items.filter((i) => i.status === 'in-progress').length;
   const completedCount = items.filter((i) => i.status === 'completed').length;
@@ -110,7 +111,8 @@ function Dashboard({ meetings, items, onNavigate }) {
           {meetings.map((meeting) => (
             <div
               key={meeting.id}
-              className="p-4 bg-zinc-900/30 border border-zinc-800 hover:border-zinc-700/70 rounded-xl space-y-3 transition-colors"
+              onClick={() => onSelectMeeting(meeting.id)}
+              className="p-4 bg-zinc-900/30 border border-zinc-800 hover:border-zinc-700/70 rounded-xl space-y-3 transition-colors cursor-pointer"
             >
               <div className="flex items-start justify-between gap-3">
                 <h4 className="text-sm font-medium text-zinc-200 leading-snug">
