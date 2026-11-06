@@ -6,8 +6,9 @@
  * - items: array of all action items
  * - onNavigate: tab switching callback (e.g. onNavigate('create') or onNavigate('items'))
  * - onSelectMeeting: callback to open a specific meeting's detail view
+ * - onDeleteMeeting: callback to delete a meeting (cascades to its action items)
  */
-function Dashboard({ meetings, items, onNavigate, onSelectMeeting }) {
+function Dashboard({ meetings, items, onNavigate, onSelectMeeting, onDeleteMeeting }) {
   const pendingCount = items.filter((i) => i.status === 'pending').length;
   const inProgressCount = items.filter((i) => i.status === 'in-progress').length;
   const completedCount = items.filter((i) => i.status === 'completed').length;
@@ -108,7 +109,24 @@ function Dashboard({ meetings, items, onNavigate, onSelectMeeting }) {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {meetings.map((meeting) => (
+          {meetings.length === 0 ? (
+            <div className="col-span-full py-12 text-center">
+              <i className="bi bi-journal-text text-3xl text-zinc-700 mb-3 block"></i>
+              <p className="text-sm text-zinc-400 mb-1">No meetings yet</p>
+              <p className="text-xs text-zinc-500">
+                Click{' '}
+                <button
+                  type="button"
+                  onClick={() => onNavigate('create')}
+                  className="text-zinc-300 underline underline-offset-2 hover:text-white transition-colors cursor-pointer"
+                >
+                  Process New Notes
+                </button>
+                {' '}to get started.
+              </p>
+            </div>
+          ) : (
+            meetings.map((meeting) => (
             <div
               key={meeting.id}
               onClick={() => onSelectMeeting(meeting.id)}
@@ -118,9 +136,24 @@ function Dashboard({ meetings, items, onNavigate, onSelectMeeting }) {
                 <h4 className="text-sm font-medium text-zinc-200 leading-snug">
                   {meeting.title}
                 </h4>
-                <span className="text-[11px] text-zinc-500 font-mono shrink-0">
-                  {meeting.date}
-                </span>
+                <div className="flex items-center gap-2 shrink-0">
+                  <span className="text-[11px] text-zinc-500 font-mono">
+                    {meeting.date}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (window.confirm(`Delete "${meeting.title}" and all its action items?`)) {
+                        onDeleteMeeting(meeting.id);
+                      }
+                    }}
+                    className="p-1 rounded-md text-zinc-600 hover:text-red-400 hover:bg-zinc-800 transition-colors cursor-pointer"
+                    title="Delete meeting"
+                  >
+                    <i className="bi bi-trash3 text-xs"></i>
+                  </button>
+                </div>
               </div>
 
               <p className="text-xs text-zinc-400 line-clamp-2 leading-relaxed">
@@ -137,7 +170,8 @@ function Dashboard({ meetings, items, onNavigate, onSelectMeeting }) {
                 </div>
               )}
             </div>
-          ))}
+          ))
+          )}
         </div>
       </div>
     </div>

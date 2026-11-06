@@ -101,6 +101,12 @@ function App() {
     );
   };
 
+  // 8. Handler: Delete a meeting AND cascade-delete its action items
+  const handleDeleteMeeting = (meetingId) => {
+    setMeetings((prev) => prev.filter((m) => m.id !== meetingId));
+    setItems((prev) => prev.filter((item) => item.meetingId !== meetingId));
+  };
+
   // Find the selected meeting object
   const selectedMeeting = meetings.find((m) => m.id === selectedMeetingId);
 
@@ -117,6 +123,7 @@ function App() {
             items={items}
             onNavigate={handleTabChange}
             onSelectMeeting={handleSelectMeeting}
+            onDeleteMeeting={handleDeleteMeeting}
           />
         )}
 
