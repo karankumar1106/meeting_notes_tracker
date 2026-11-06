@@ -1,6 +1,8 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import meetingsRouter from './routes/meetings.js';
+import itemsRouter from './routes/items.js';
 
 // 1. Load environment variables from .env file
 dotenv.config();
@@ -10,14 +12,10 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // 3. Core Middleware
-// cors(): allows requests from our React frontend (running on different port like 5173/5174)
 app.use(cors());
-
-// express.json(): parses incoming JSON payloads in request bodies (req.body)
 app.use(express.json());
 
-// 4. Health Check Endpoint
-// Used to verify that the server is alive and responding
+// 4. API Routes
 app.get('/api/health', (req, res) => {
   res.status(200).json({
     status: 'ok',
@@ -26,9 +24,24 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// 5. Start listening for incoming network requests
-app.listen(PORT, () => {
-  console.log(`[server] API listening at http://localhost:${PORT}`);
-  console.log(`[server] Health check available at http://localhost:${PORT}/api/health`);
+app.use('/api/meetings', meetingsRouter);
+app.use('/api/items', itemsRouter);
+
+// 5. 404 Handler for unknown routes
+app.use((req, res) => {
+  res.status(404).json({ error: `Route ${req.method} ${req.originalUrl} not found` });
 });
 
+// 6. Global Error Handling Middleware
+app.use((err, req, res, next) => {
+  console.error('[server error]', err.stack);
+  res.status(500).json({ error: 'Internal Server Error' });
+});
+
+// 7. Start listening for incoming network requests
+app.listen(PORT, () => {
+  console.log(`[server] API listening at http://localhost:${PORT}`);
+  console.log(`[server] Health check: http://localhost:${PORT}/api/health`);
+  console.log(`[server] Meetings API: http://localhost:${PORT}/api/meetings`);
+  console.log(`[server] Items API:    http://localhost:${PORT}/api/items`);
+});
