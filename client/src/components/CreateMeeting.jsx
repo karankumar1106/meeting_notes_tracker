@@ -12,19 +12,20 @@ function CreateMeeting({ onCreateMeeting }) {
   const [notes, setNotes] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!title.trim() || !notes.trim()) return;
 
     setIsProcessing(true);
-
-    // Simulate extraction processing delay (600ms)
-    setTimeout(() => {
-      onCreateMeeting(title, notes);
-      setIsProcessing(false);
+    try {
+      await onCreateMeeting(title, notes);
       setTitle('');
       setNotes('');
-    }, 600);
+    } catch (err) {
+      console.error('Failed to create meeting:', err);
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   return (
