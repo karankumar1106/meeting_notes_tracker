@@ -12,13 +12,13 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000
  */
 async function request(endpoint, options = {}) {
   const url = `${API_BASE_URL}${endpoint}`;
-  
+
   const config = {
+    ...options,
     headers: {
       'Content-Type': 'application/json',
       ...options.headers,
     },
-    ...options,
   };
 
   try {
@@ -81,3 +81,4 @@ export const deleteItem = (id) =>
   request(`/items/${id}`, {
     method: 'DELETE',
   });
+
