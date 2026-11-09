@@ -1,6 +1,6 @@
 import { Meeting } from '../models/meeting.model.js';
 import { Item } from '../models/item.model.js';
-import { simulateAIExtraction } from '../utils/aiSimulator.js';
+import { extractMeetingInsights } from '../services/ai.service.js';
 
 /**
  * Controller: Get all meetings
@@ -57,8 +57,8 @@ export const createMeeting = async (req, res) => {
     const trimmedTitle = title?.trim() || 'Untitled Meeting';
     const trimmedNotes = notes.trim();
 
-    // 1. Simulate AI extraction (in Phase 5 this calls Gemini / OpenAI)
-    const { decisions, unansweredQuestions, rawItems } = simulateAIExtraction(trimmedTitle, trimmedNotes);
+    // 1. Extract insights using AI Service (Gemini API with fallback)
+    const { decisions, unansweredQuestions, actionItems } = await extractMeetingInsights(trimmedTitle, trimmedNotes);
 
     // 2. Persist Meeting to MongoDB Atlas
     const newMeeting = await Meeting.create({
@@ -69,7 +69,7 @@ export const createMeeting = async (req, res) => {
     });
 
     // 3. Attach meetingId and persist Action Items to MongoDB Atlas
-    const itemsToInsert = rawItems.map((item) => ({
+    const itemsToInsert = actionItems.map((item) => ({
       ...item,
       meetingId: newMeeting._id,
       meetingTitle: newMeeting.title,

@@ -1,6 +1,6 @@
 import express from 'express';
 import cors from 'cors';
-
+const isDevelopment = process.env.NODE_ENV !== 'production'
 const app = express();
 
 // Middlewares
@@ -13,7 +13,9 @@ const allowedOrigins = [
 app.use(cors({
   origin: (origin, callback) => {
     if (!origin) return callback(null, true);
-    if (allowedOrigins.indexOf(origin) !== -1 || /^http:\/\/localhost:\d+$/.test(origin)) {
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    } else if (isDevelopment) {
       return callback(null, true);
     }
     return callback(new Error('Not allowed by CORS'));
@@ -40,8 +42,6 @@ import itemRouter from './routes/item.routes.js';
 // Route Declarations
 app.use('/api/meetings', meetingRouter);
 app.use('/api/items', itemRouter);
-app.use('/api/v1/meetings', meetingRouter);
-app.use('/api/v1/items', itemRouter);
 
 // 404 Fallback
 app.use((req, res) => {
