@@ -1,5 +1,8 @@
+import dns from 'node:dns';
 import { GoogleGenerativeAI, SchemaType } from '@google/generative-ai';
 import { simulateAIExtraction } from '../utils/aiSimulator.js';
+
+dns.setDefaultResultOrder('ipv4first');
 
 /**
  * Strict JSON Schema definition for Gemini Structured Outputs
@@ -71,18 +74,22 @@ export async function extractMeetingInsights(title, notes) {
     };
   }
 
-  try {
-    const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({
-      model: 'gemini-1.5-flash',
-      generationConfig: {
-        responseMimeType: 'application/json',
-        responseSchema: meetingExtractionSchema,
-        temperature: 0.2, // Low temperature for deterministic, analytical extraction
-      },
-    });
+  const activeModels = ['gemini-3.5-flash-lite', 'gemini-3.8-flash'];
+  let lastError = null;
 
-    const prompt = `
+  for (const modelName of activeModels) {
+    try {
+      const genAI = new GoogleGenerativeAI(apiKey);
+      const model = genAI.getGenerativeModel({
+        model: modelName,
+        generationConfig: {
+          responseMimeType: 'application/json',
+          responseSchema: meetingExtractionSchema,
+          temperature: 0.2, // Low temperature for deterministic, analytical extraction
+        },
+      });
+
+      const prompt = `
 You are an expert executive meeting assistant. Analyze the following meeting notes carefully.
 
 Meeting Title: "${title || 'Untitled Meeting'}"
@@ -92,35 +99,41 @@ ${notes}
 """
 
 Instructions:
-1. Extract all definitive DECISIONS agreed upon.
-2. Identify all UNANSWERED QUESTIONS, blockers, or topics left open.
-3. Extract concrete ACTION ITEMS. For each action item:
-   - Identify the owner (assignee).
-   - Infer the due date if mentioned (otherwise set to a sensible default or relative date).
+1. Extract ALL definitive DECISIONS agreed upon.
+2. Identify ALL UNANSWERED QUESTIONS, blockers, or topics left open.
+3. Extract ALL concrete ACTION ITEMS and commitments. For each action item:
+   - Identify the owner (assignee) or team.
+   - Infer the due date if mentioned (otherwise set to a sensible default or relative date like "Next Friday").
    - Set status to 'pending' unless explicitly stated as already done or in progress.
-   - CRITICAL: Copy the EXACT verbatim sentence from the notes into "sourceSentence" to prevent hallucination.
+   - CRITICAL: Copy the EXACT verbatim sentence from the notes into "sourceSentence" to anchor this task back to the transcript.
 `;
 
-    const result = await model.generateContent(prompt);
-    const responseText = result.response.text();
-    const parsedData = JSON.parse(responseText);
+      const result = await model.generateContent(prompt);
+      const responseText = result.response.text();
+      const parsedData = JSON.parse(responseText);
 
-    return {
-      decisions: parsedData.decisions || [],
-      unansweredQuestions: parsedData.unansweredQuestions || [],
-      actionItems: parsedData.actionItems || [],
-      source: 'gemini-1.5-flash',
-    };
-  } catch (error) {
-    console.error('[AI Service] Gemini extraction failed:', error.message);
-    console.warn('[AI Service] Falling back to local simulation due to API error.');
-    const simulated = simulateAIExtraction(title, notes);
-    return {
-      decisions: simulated.decisions,
-      unansweredQuestions: simulated.unansweredQuestions,
-      actionItems: simulated.rawItems,
-      source: 'simulator (fallback after error)',
-    };
+      console.log(`[AI Service] Successfully extracted ${parsedData.actionItems?.length || 0} action items using ${modelName}!`);
+
+      return {
+        decisions: parsedData.decisions || [],
+        unansweredQuestions: parsedData.unansweredQuestions || [],
+        actionItems: parsedData.actionItems || [],
+        source: modelName,
+      };
+    } catch (error) {
+      lastError = error;
+      console.warn(`[AI Service] Attempt with ${modelName} failed: ${error.message.split('\n')[0]}. Trying backup model...`);
+    }
   }
+
+  console.error('[AI Service] All Gemini model attempts failed:', lastError?.message);
+  console.warn('[AI Service] Falling back to local simulation due to API error.');
+  const simulated = simulateAIExtraction(title, notes);
+  return {
+    decisions: simulated.decisions,
+    unansweredQuestions: simulated.unansweredQuestions,
+    actionItems: simulated.rawItems,
+    source: 'simulator (fallback after error)',
+  };
 }
 

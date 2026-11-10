@@ -1,6 +1,10 @@
+import dns from 'node:dns';
 import dotenv from 'dotenv';
 import connectDB from './db/index.js';
 import { app } from './app.js';
+
+// Resolve IPv4 first to prevent Windows Node.js getaddrinfo ENOTFOUND issues
+dns.setDefaultResultOrder('ipv4first');
 
 // Load environment variables as early as possible
 dotenv.config({
