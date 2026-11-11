@@ -1,11 +1,30 @@
+import jwt from 'jsonwebtoken';
 import { User } from '../models/user.model.js';
 
-// Standard cookie options
+// Cookie options
 const cookieOptions = {
-  httpOnly: true, // Prevents client-side JavaScript from reading the cookie (protects against XSS)
+  httpOnly: true, // Prevents client-side JS from reading the cookie (protects against XSS)
   secure: process.env.NODE_ENV === 'production',
   sameSite: 'lax',
-  maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days in milliseconds
+};
+
+/**
+ * Helper: Generate Access and Refresh Tokens & save refresh token in MongoDB
+ */
+const generateAccessAndRefreshTokens = async (userId) => {
+  const user = await User.findById(userId);
+  if (!user) {
+    throw new Error('User not found while generating tokens');
+  }
+
+  const accessToken = user.generateAccessToken();
+  const refreshToken = user.generateRefreshToken();
+
+  // Save refresh token to user document in database
+  user.refreshToken = refreshToken;
+  await user.save({ validateBeforeSave: false });
+
+  return { accessToken, refreshToken };
 };
 
 /**
@@ -48,17 +67,18 @@ export const registerUser = async (req, res) => {
       password,
     });
 
-    // Generate JWT access token
-    const accessToken = user.generateAccessToken();
+    const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(user._id);
 
     return res
       .status(201)
-      .cookie('accessToken', accessToken, cookieOptions)
+      .cookie('accessToken', accessToken, { ...cookieOptions, maxAge: 1 * 24 * 60 * 60 * 1000 }) // 1 day
+      .cookie('refreshToken', refreshToken, { ...cookieOptions, maxAge: 10 * 24 * 60 * 60 * 1000 }) // 10 days
       .json({
         success: true,
         message: 'User registered successfully',
         user,
         accessToken,
+        refreshToken,
       });
   } catch (error) {
     console.error('Error in registerUser:', error);
@@ -101,17 +121,18 @@ export const loginUser = async (req, res) => {
       });
     }
 
-    // Generate JWT token
-    const accessToken = user.generateAccessToken();
+    const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(user._id);
 
     return res
       .status(200)
-      .cookie('accessToken', accessToken, cookieOptions)
+      .cookie('accessToken', accessToken, { ...cookieOptions, maxAge: 1 * 24 * 60 * 60 * 1000 }) // 1 day
+      .cookie('refreshToken', refreshToken, { ...cookieOptions, maxAge: 10 * 24 * 60 * 60 * 1000 }) // 10 days
       .json({
         success: true,
         message: 'Logged in successfully',
         user,
         accessToken,
+        refreshToken,
       });
   } catch (error) {
     console.error('Error in loginUser:', error);
@@ -125,9 +146,19 @@ export const loginUser = async (req, res) => {
  */
 export const logoutUser = async (req, res) => {
   try {
+    // Clear the stored refresh token from database
+    if (req.user?._id) {
+      await User.findByIdAndUpdate(
+        req.user._id,
+        { $set: { refreshToken: null } },
+        { returnDocument: 'after' }
+      );
+    }
+
     return res
       .status(200)
       .clearCookie('accessToken', cookieOptions)
+      .clearCookie('refreshToken', cookieOptions)
       .json({
         success: true,
         message: 'User logged out successfully',
@@ -135,6 +166,64 @@ export const logoutUser = async (req, res) => {
   } catch (error) {
     console.error('Error in logoutUser:', error);
     return res.status(500).json({ success: false, message: 'Logout failed' });
+  }
+};
+
+/**
+ * Controller: Refresh Access Token (Rotation Pattern)
+ * POST /api/users/refresh-token
+ */
+export const refreshAccessToken = async (req, res) => {
+  try {
+    const incomingRefreshToken =
+      req.cookies?.refreshToken || req.body?.refreshToken;
+
+    if (!incomingRefreshToken) {
+      return res.status(401).json({
+        success: false,
+        message: 'Unauthorized: No refresh token provided',
+      });
+    }
+
+    const secret = process.env.REFRESH_TOKEN_SECRET || 'fallback_refresh_secret';
+    const decodedToken = jwt.verify(incomingRefreshToken, secret);
+
+    const user = await User.findById(decodedToken._id);
+    if (!user) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid refresh token: User not found',
+      });
+    }
+
+    // Verify token matches what is stored in MongoDB
+    if (incomingRefreshToken !== user.refreshToken) {
+      return res.status(401).json({
+        success: false,
+        message: 'Refresh token is expired or has been revoked',
+      });
+    }
+
+    // Generate new Access and Refresh tokens (Refresh Token Rotation!)
+    const { accessToken, refreshToken: newRefreshToken } =
+      await generateAccessAndRefreshTokens(user._id);
+
+    return res
+      .status(200)
+      .cookie('accessToken', accessToken, { ...cookieOptions, maxAge: 1 * 24 * 60 * 60 * 1000 })
+      .cookie('refreshToken', newRefreshToken, { ...cookieOptions, maxAge: 10 * 24 * 60 * 60 * 1000 })
+      .json({
+        success: true,
+        message: 'Access token refreshed successfully',
+        accessToken,
+        refreshToken: newRefreshToken,
+      });
+  } catch (error) {
+    console.error('Error in refreshAccessToken:', error.message);
+    return res.status(401).json({
+      success: false,
+      message: 'Invalid or expired refresh token',
+    });
   }
 };
 
@@ -148,4 +237,3 @@ export const getCurrentUser = async (req, res) => {
     user: req.user,
   });
 };
-

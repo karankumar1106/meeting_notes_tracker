@@ -23,6 +23,10 @@ const userSchema = new Schema(
       required: [true, 'Password is required'],
       minlength: [6, 'Password must be at least 6 characters'],
     },
+    refreshToken: {
+      type: String,
+      default: null,
+    },
   },
   {
     timestamps: true,
@@ -48,11 +52,11 @@ userSchema.methods.isPasswordCorrect = async function (candidatePassword) {
 };
 
 /**
- * Instance Method: Generate signed JWT Access Token
+ * Instance Method: Generate signed JWT Access Token (Short-lived)
  */
 userSchema.methods.generateAccessToken = function () {
   const secret = process.env.ACCESS_TOKEN_SECRET || 'fallback_secret_key';
-  const expiry = process.env.ACCESS_TOKEN_EXPIRY || '7d';
+  const expiry = process.env.ACCESS_TOKEN_EXPIRY || '1d';
 
   return jwt.sign(
     {
@@ -67,13 +71,32 @@ userSchema.methods.generateAccessToken = function () {
   );
 };
 
-// Map _id to id and remove password when sending JSON to client
+/**
+ * Instance Method: Generate signed JWT Refresh Token (Long-lived)
+ */
+userSchema.methods.generateRefreshToken = function () {
+  const secret = process.env.REFRESH_TOKEN_SECRET || 'fallback_refresh_secret';
+  const expiry = process.env.REFRESH_TOKEN_EXPIRY || '10d';
+
+  return jwt.sign(
+    {
+      _id: this._id,
+    },
+    secret,
+    {
+      expiresIn: expiry,
+    }
+  );
+};
+
+// Map _id to id and remove password and refreshToken when sending JSON to client
 userSchema.set('toJSON', {
   virtuals: true,
   versionKey: false,
   transform: (doc, ret) => {
     ret.id = ret._id.toString();
-    delete ret.password; // CRITICAL: Never return password hash to client!
+    delete ret.password;     // CRITICAL: Never return password hash!
+    delete ret.refreshToken; // CRITICAL: Never return refresh token in user object!
     return ret;
   },
 });
