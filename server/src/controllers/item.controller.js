@@ -9,6 +9,9 @@ export const getAllItems = async (req, res) => {
     const { meetingId, status } = req.query;
 
     const query = {};
+    if (req.user) {
+      query.userId = req.user._id;
+    }
     if (meetingId) {
       query.meetingId = meetingId;
     }

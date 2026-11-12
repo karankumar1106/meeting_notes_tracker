@@ -31,20 +31,17 @@ function CreateMeeting({ onCreateMeeting }) {
   return (
     <div className="bg-zinc-900/40 border border-zinc-800 rounded-xl p-5 md:p-7 shadow-xs backdrop-blur-sm max-w-4xl mx-auto">
       <div className="mb-6">
-        <h2 className="text-base font-semibold text-zinc-100 tracking-tight mb-1">
-          New Meeting Record
-        </h2>
+        <div className="flex items-center gap-2.5 mb-1">
+          <h2 className="text-base font-semibold text-zinc-100 tracking-tight">
+            New Meeting Record
+          </h2>
+          <span className="px-2 py-0.5 rounded-md text-[10px] font-mono text-zinc-400 bg-zinc-800/60 border border-zinc-700/50">
+            Gemini AI
+          </span>
+        </div>
         <p className="text-xs text-zinc-400">
           Paste meeting transcripts, bullet points, or discussion summaries to generate structured commitments.
         </p>
-      </div>
-
-      {/* Subtle Information Notice with Bootstrap Icon */}
-      <div className="p-3 mb-6 rounded-lg bg-zinc-950/70 border border-zinc-800/80 text-xs text-zinc-400 flex items-start gap-2.5">
-        <i className="bi bi-info-circle text-zinc-400 text-xs mt-0.5 shrink-0"></i>
-        <div className="leading-relaxed">
-          <span className="font-medium text-zinc-300">Phase 1 Architecture:</span> Submitting simulates the extraction pipeline and structures action items linked to source sentences. Real LLM extraction will be integrated in Phase 5.
-        </div>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-5">

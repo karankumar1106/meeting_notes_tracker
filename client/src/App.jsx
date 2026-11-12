@@ -4,34 +4,40 @@ import Dashboard from './components/Dashboard';
 import CreateMeeting from './components/CreateMeeting';
 import ActionItems from './components/ActionItems';
 import MeetingDetails from './components/MeetingDetails';
+import AuthModal from './components/AuthModal';
 import {
   getMeetings,
   getItems,
   createMeeting as apiCreateMeeting,
   updateItem as apiUpdateItem,
   deleteItem as apiDeleteItem,
-  deleteMeeting as apiDeleteMeeting
+  deleteMeeting as apiDeleteMeeting,
+  getCurrentUserApi,
+  logoutApi,
 } from './services/api';
 
 /**
- * App Component (Central State Orchestrator & Backend Integration)
+ * App Component (Central State Orchestrator & Authentication Integration)
  * 
- * Phase 3 Architecture:
- * - Data is fetched from and persisted to the Express backend (http://localhost:5000/api).
- * - React state reflects the authoritative state of the backend.
- * - Handles loading, network errors, and asynchronous mutations.
+ * Phase 6 Architecture:
+ * - Session verification on mount via getCurrentUserApi().
+ * - Protected screens: displays AuthModal for unauthenticated visitors.
+ * - Multi-tenancy: each authenticated user views and manages only their own records.
  */
 function App() {
+  const [currentUser, setCurrentUser] = useState(null);
+  const [isAuthLoading, setIsAuthLoading] = useState(true);
+
   const [activeTab, setActiveTab] = useState('dashboard');
   const [selectedMeetingId, setSelectedMeetingId] = useState(null);
 
   const [meetings, setMeetings] = useState([]);
   const [items, setItems] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // Load initial data from the Express backend
-  const loadInitialData = async () => {
+  // Load records belonging to the authenticated user
+  const loadUserData = async () => {
     setIsLoading(true);
     setError(null);
     try {
@@ -39,19 +45,55 @@ function App() {
         getMeetings(),
         getItems(),
       ]);
-      setMeetings(fetchedMeetings);
-      setItems(fetchedItems);
+      setMeetings(fetchedMeetings || []);
+      setItems(fetchedItems || []);
     } catch (err) {
-      console.error('Failed to connect to API server:', err);
+      console.error('Failed to load user records:', err);
       setError(err.message || 'Could not connect to backend server on port 5000.');
     } finally {
       setIsLoading(false);
     }
   };
 
+  // Verify authentication on startup
   useEffect(() => {
-    loadInitialData();
+    const verifyAuth = async () => {
+      setIsAuthLoading(true);
+      try {
+        const res = await getCurrentUserApi();
+        if (res.user) {
+          setCurrentUser(res.user);
+          await loadUserData();
+        }
+      } catch (err) {
+        // Not logged in or expired token
+        setCurrentUser(null);
+      } finally {
+        setIsAuthLoading(false);
+      }
+    };
+
+    verifyAuth();
   }, []);
+
+  const handleAuthSuccess = async (user) => {
+    setCurrentUser(user);
+    await loadUserData();
+  };
+
+  const handleLogout = async () => {
+    try {
+      await logoutApi();
+    } catch (err) {
+      console.error('Logout error:', err);
+    } finally {
+      setCurrentUser(null);
+      setMeetings([]);
+      setItems([]);
+      setSelectedMeetingId(null);
+      setActiveTab('dashboard');
+    }
+  };
 
   // Navigation handlers
   const handleTabChange = (tab) => {
@@ -71,7 +113,7 @@ function App() {
     setActiveTab('dashboard');
   };
 
-  // 1. Create new meeting & extracted items via Backend POST /api/meetings
+  // 1. Create new meeting via Backend POST /api/meetings
   const handleCreateMeeting = async (title, notes) => {
     try {
       const result = await apiCreateMeeting(title, notes);
@@ -146,10 +188,26 @@ function App() {
 
   const selectedMeeting = meetings.find((m) => m.id === selectedMeetingId);
 
+  // Initial Auth Verification Loading Spinner
+  if (isAuthLoading) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center space-y-3">
+        <div className="w-6 h-6 border-2 border-zinc-700 border-t-zinc-200 rounded-full animate-spin"></div>
+        <p className="text-xs text-zinc-400 font-mono">Verifying authentication...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-6xl mx-auto px-4 py-8 min-h-screen">
       {/* Top Navigation */}
-      <Navbar activeTab={activeTab} setActiveTab={handleTabChange} />
+      <Navbar
+        activeTab={activeTab}
+        setActiveTab={handleTabChange}
+        currentUser={currentUser}
+        onLogout={handleLogout}
+        onOpenAuth={() => {}}
+      />
 
       {/* Backend Connection Error Banner */}
       {error && (
@@ -157,15 +215,12 @@ function App() {
           <div className="flex items-center gap-2.5">
             <i className="bi bi-exclamation-triangle-fill text-sm shrink-0"></i>
             <div>
-              <span className="font-semibold">Backend Connection Issue:</span> {error}
-              <span className="block text-[11px] text-zinc-400 mt-0.5">
-                Ensure Express server is running on http://localhost:5000.
-              </span>
+              <span className="font-semibold">Connection Issue:</span> {error}
             </div>
           </div>
           <button
             type="button"
-            onClick={loadInitialData}
+            onClick={loadUserData}
             className="px-3 py-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs rounded-lg transition-colors cursor-pointer shrink-0"
           >
             Retry
@@ -173,14 +228,17 @@ function App() {
         </div>
       )}
 
-      {/* Initial Loading Indicator */}
-      {isLoading ? (
+      {/* Unauthenticated View: Render Auth Screen */}
+      {!currentUser ? (
+        <AuthModal onAuthSuccess={handleAuthSuccess} />
+      ) : isLoading ? (
+        /* Authenticated Loading Indicator */
         <div className="flex flex-col items-center justify-center py-20 space-y-3">
           <div className="w-6 h-6 border-2 border-zinc-700 border-t-zinc-200 rounded-full animate-spin"></div>
-          <p className="text-xs text-zinc-400 font-mono">Connecting to API server...</p>
+          <p className="text-xs text-zinc-400 font-mono">Loading your meeting records...</p>
         </div>
       ) : (
-        /* Main Screens */
+        /* Authenticated Main Screens */
         <main>
           {activeTab === 'dashboard' && (
             <Dashboard

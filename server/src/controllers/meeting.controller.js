@@ -8,7 +8,8 @@ import { extractMeetingInsights } from '../services/ai.service.js';
  */
 export const getAllMeetings = async (req, res) => {
   try {
-    const meetings = await Meeting.find().sort({ createdAt: -1 });
+    const filter = req.user ? { userId: req.user._id } : {};
+    const meetings = await Meeting.find(filter).sort({ createdAt: -1 });
     return res.status(200).json(meetings);
   } catch (error) {
     console.error('Error fetching meetings:', error);
@@ -66,13 +67,15 @@ export const createMeeting = async (req, res) => {
       notes: trimmedNotes,
       decisions,
       unansweredQuestions,
+      userId: req.user?._id,
     });
 
-    // 3. Attach meetingId and persist Action Items to MongoDB Atlas
+    // 3. Attach meetingId, userId and persist Action Items to MongoDB Atlas
     const itemsToInsert = actionItems.map((item) => ({
       ...item,
       meetingId: newMeeting._id,
       meetingTitle: newMeeting.title,
+      userId: req.user?._id,
     }));
 
     const insertedItems = await Item.insertMany(itemsToInsert);

@@ -25,6 +25,12 @@ const meetingSchema = new Schema(
       type: [String],
       default: [],
     },
+    userId: {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
+      required: false, // Optional for backward compatibility with initial sample data, populated on new creations
+      index: true,
+    },
   },
   {
     timestamps: true,
