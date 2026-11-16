@@ -1,15 +1,15 @@
 import dns from 'node:dns';
-import dotenv from 'dotenv';
-import connectDB from './db/index.js';
-import { app } from './app.js';
 
 // Resolve IPv4 first to prevent Windows Node.js getaddrinfo ENOTFOUND issues
 dns.setDefaultResultOrder('ipv4first');
 
-// Load environment variables as early as possible
-dotenv.config({
-  path: './.env'
-});
+// Load environment variables immediately before any other application modules are imported
+import 'dotenv/config';
+
+import connectDB from './db/index.js';
+import { app } from './app.js';
+// Start background BullMQ worker
+import './workers/meeting.worker.js';
 
 const PORT = process.env.PORT || 5000;
 

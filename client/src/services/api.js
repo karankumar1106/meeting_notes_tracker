@@ -134,3 +134,7 @@ export const deleteItem = (id) =>
   request(`/items/${id}`, {
     method: 'DELETE',
   });
+
+// Job Endpoints (Background Processing)
+export const getJobStatus = (id) => request(`/jobs/${id}`);
+export const getUserJobs = () => request('/jobs');

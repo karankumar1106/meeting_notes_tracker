@@ -41,11 +41,13 @@ app.get('/api/health', (req, res) => {
 import userRouter from './routes/user.routes.js';
 import meetingRouter from './routes/meeting.routes.js';
 import itemRouter from './routes/item.routes.js';
+import jobRouter from './routes/job.routes.js';
 
 // Route Declarations
 app.use('/api/users', userRouter);
 app.use('/api/meetings', meetingRouter);
 app.use('/api/items', itemRouter);
+app.use('/api/jobs', jobRouter);
 
 // 404 Fallback
 app.use((req, res) => {

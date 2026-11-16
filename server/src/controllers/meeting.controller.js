@@ -1,5 +1,7 @@
 import { Meeting } from '../models/meeting.model.js';
 import { Item } from '../models/item.model.js';
+import { Job } from '../models/job.model.js';
+import { addMeetingJob } from '../queues/meeting.queue.js';
 import { extractMeetingInsights } from '../services/ai.service.js';
 
 /**
@@ -41,8 +43,15 @@ export const getMeetingById = async (req, res) => {
 };
 
 /**
- * Controller: Create new meeting & extract action items
+ * Controller: Create new meeting (Asynchronous Background Job)
  * POST /api/meetings
+ * 
+ * Production Flow:
+ * 1. Validates payload
+ * 2. Creates a persistent Job ticket in MongoDB (status: 'queued')
+ * 3. Dispatches job to BullMQ / Redis Queue
+ * 4. Responds immediately with HTTP 202 Accepted (< 20ms)
+ * 5. Background worker independently processes AI extraction & database persistence
  */
 export const createMeeting = async (req, res) => {
   try {
@@ -58,36 +67,35 @@ export const createMeeting = async (req, res) => {
     const trimmedTitle = title?.trim() || 'Untitled Meeting';
     const trimmedNotes = notes.trim();
 
-    // 1. Extract insights using AI Service (Gemini API with fallback)
-    const { decisions, unansweredQuestions, actionItems } = await extractMeetingInsights(trimmedTitle, trimmedNotes);
+    // 1. Create Job record in MongoDB to track progress & store artifacts
+    const job = await Job.create({
+      userId: req.user._id,
+      payload: {
+        title: trimmedTitle,
+        notes: trimmedNotes,
+      },
+      status: 'queued',
+      progress: 0,
+    });
 
-    // 2. Persist Meeting to MongoDB Atlas
-    const newMeeting = await Meeting.create({
+    // 2. Dispatch to BullMQ Redis Queue
+    await addMeetingJob({
+      mongoJobId: job._id.toString(),
+      userId: req.user._id.toString(),
       title: trimmedTitle,
       notes: trimmedNotes,
-      decisions,
-      unansweredQuestions,
-      userId: req.user?._id,
     });
 
-    // 3. Attach meetingId, userId and persist Action Items to MongoDB Atlas
-    const itemsToInsert = actionItems.map((item) => ({
-      ...item,
-      meetingId: newMeeting._id,
-      meetingTitle: newMeeting.title,
-      userId: req.user?._id,
-    }));
-
-    const insertedItems = await Item.insertMany(itemsToInsert);
-
-    return res.status(201).json({
+    // 3. Immediately return 202 Accepted with the Job Ticket
+    return res.status(202).json({
       success: true,
-      meeting: newMeeting,
-      items: insertedItems,
+      message: 'Meeting notes submitted and queued for background AI extraction',
+      jobId: job._id,
+      status: 'queued',
     });
   } catch (error) {
-    console.error('Error creating meeting:', error);
-    return res.status(500).json({ success: false, message: 'Failed to create meeting' });
+    console.error('Error queuing meeting creation:', error);
+    return res.status(500).json({ success: false, message: 'Failed to queue meeting creation' });
   }
 };
 

@@ -12,6 +12,7 @@ import {
   updateItem as apiUpdateItem,
   deleteItem as apiDeleteItem,
   deleteMeeting as apiDeleteMeeting,
+  getJobStatus,
   getCurrentUserApi,
   logoutApi,
 } from './services/api';
@@ -113,18 +114,49 @@ function App() {
     setActiveTab('dashboard');
   };
 
-  // 1. Create new meeting via Backend POST /api/meetings
-  const handleCreateMeeting = async (title, notes) => {
+  // 1. Create new meeting via Backend POST /api/meetings (Asynchronous Job Queue)
+  const handleCreateMeeting = async (title, notes, onProgress) => {
     try {
-      const result = await apiCreateMeeting(title, notes);
-      const newMeeting = result.meeting;
-      const newItems = result.items || [];
+      // 1. Dispatch job to backend queue (responds in ~20ms with 202 Accepted)
+      const res = await apiCreateMeeting(title, notes);
+      const jobId = res.jobId;
 
-      setMeetings((prev) => [newMeeting, ...prev]);
-      setItems((prev) => [...newItems, ...prev]);
+      if (!jobId) {
+        throw new Error('No job ID returned from queue');
+      }
 
-      // Automatically navigate to items tab to review extracted commitments
-      setActiveTab('items');
+      if (onProgress) {
+        onProgress({ status: 'queued', progress: 10, message: 'Job accepted and queued in Redis' });
+      }
+
+      // 2. Poll job status until worker completes extraction
+      return new Promise((resolve, reject) => {
+        const intervalId = setInterval(async () => {
+          try {
+            const statusRes = await getJobStatus(jobId);
+            const job = statusRes.job;
+
+            if (onProgress && job) {
+              onProgress(job);
+            }
+
+            if (job.status === 'completed') {
+              clearInterval(intervalId);
+              // Refresh user data (meetings and action items) from database
+              await loadUserData();
+              setActiveTab('items');
+              resolve(job);
+            } else if (job.status === 'failed') {
+              clearInterval(intervalId);
+              const errMsg = job.error?.message || 'Background AI extraction failed';
+              reject(new Error(errMsg));
+            }
+          } catch (pollErr) {
+            clearInterval(intervalId);
+            reject(pollErr);
+          }
+        }, 1500);
+      });
     } catch (err) {
       alert(`Failed to process meeting: ${err.message}`);
       throw err;
