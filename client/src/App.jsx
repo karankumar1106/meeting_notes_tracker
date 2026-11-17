@@ -129,9 +129,13 @@ function App() {
         onProgress({ status: 'queued', progress: 10, message: 'Job accepted and queued in Redis' });
       }
 
-      // 2. Poll job status until worker completes extraction
+      // 2. Poll job status until worker completes extraction (Chained setTimeout to prevent request stacking)
       return new Promise((resolve, reject) => {
-        const intervalId = setInterval(async () => {
+        let isStopped = false;
+
+        const poll = async () => {
+          if (isStopped) return;
+
           try {
             const statusRes = await getJobStatus(jobId);
             const job = statusRes.job;
@@ -141,21 +145,31 @@ function App() {
             }
 
             if (job.status === 'completed') {
-              clearInterval(intervalId);
+              isStopped = true;
               // Refresh user data (meetings and action items) from database
               await loadUserData();
               setActiveTab('items');
               resolve(job);
-            } else if (job.status === 'failed') {
-              clearInterval(intervalId);
+              return;
+            }
+
+            if (job.status === 'failed') {
+              isStopped = true;
               const errMsg = job.error?.message || 'Background AI extraction failed';
               reject(new Error(errMsg));
+              return;
             }
+
+            // Only schedule the next poll after this request has completely resolved
+            setTimeout(poll, 1500);
           } catch (pollErr) {
-            clearInterval(intervalId);
+            isStopped = true;
             reject(pollErr);
           }
-        }, 1500);
+        };
+
+        // Trigger initial poll
+        poll();
       });
     } catch (err) {
       alert(`Failed to process meeting: ${err.message}`);
