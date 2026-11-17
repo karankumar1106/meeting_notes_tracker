@@ -12,6 +12,10 @@ const jobSchema = new Schema(
       required: true,
       index: true,
     },
+    idempotencyKey: {
+      type: String,
+      index: true,
+    },
     type: {
       type: String,
       required: true,

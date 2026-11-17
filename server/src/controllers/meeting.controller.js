@@ -1,3 +1,4 @@
+import crypto from 'node:crypto';
 import { Meeting } from '../models/meeting.model.js';
 import { Item } from '../models/item.model.js';
 import { Job } from '../models/job.model.js';
@@ -67,9 +68,35 @@ export const createMeeting = async (req, res) => {
     const trimmedTitle = title?.trim() || 'Untitled Meeting';
     const trimmedNotes = notes.trim();
 
-    // 1. Create Job record in MongoDB to track progress & store artifacts
+    // 1. Calculate Idempotency Key (client header or SHA-256 hash of payload)
+    const idempotencyKey =
+      req.headers['idempotency-key'] ||
+      crypto
+        .createHash('sha256')
+        .update(`${req.user?._id}:${trimmedTitle}:${trimmedNotes}`)
+        .digest('hex');
+
+    // 2. Prevent duplicate work: check if an identical job is already active
+    const activeExistingJob = await Job.findOne({
+      userId: req.user._id,
+      idempotencyKey,
+      status: { $in: ['queued', 'processing'] },
+    });
+
+    if (activeExistingJob) {
+      return res.status(202).json({
+        success: true,
+        message: 'An identical meeting extraction is already in progress',
+        jobId: activeExistingJob._id,
+        status: activeExistingJob.status,
+        isExisting: true,
+      });
+    }
+
+    // 3. Create Job record in MongoDB to track progress & store artifacts
     const job = await Job.create({
       userId: req.user._id,
+      idempotencyKey,
       payload: {
         title: trimmedTitle,
         notes: trimmedNotes,
